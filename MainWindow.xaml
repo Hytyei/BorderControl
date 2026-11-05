@@ -1,0 +1,427 @@
+<Window x:Class="VpnGuard.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Border Control"
+        Width="400" Height="808"
+        ResizeMode="CanMinimize"
+        WindowStartupLocation="CenterScreen"
+        Background="Transparent"
+        Foreground="{StaticResource Ink}"
+        FontFamily="{StaticResource Text}"
+        TextOptions.TextFormattingMode="Display"
+        UseLayoutRounding="True">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="44" ResizeBorderThickness="0" GlassFrameThickness="-1"
+                      UseAeroCaptionButtons="False" CornerRadius="0"/>
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <!-- Shared shield outline (0..100 box) – same geometry as the app/tray icons. -->
+        <PathGeometry x:Key="ShieldGeo"
+                      Figures="M50,5 C62,13 75,17 89,18 L89,47 C89,72 72,87 50,95 C28,87 11,72 11,47 L11,18 C25,17 38,13 50,5 Z"/>
+    </Window.Resources>
+
+    <Grid x:Name="Root" Background="#D90B0D12">
+
+        <!-- ───────── ambient light, tinted by status ───────── -->
+        <Canvas IsHitTestVisible="False" ClipToBounds="True">
+            <Ellipse x:Name="Blob1" Width="380" Height="300" Canvas.Left="-60" Canvas.Top="-40">
+                <Ellipse.Fill>
+                    <RadialGradientBrush>
+                        <GradientStop Offset="0" Color="#447C8396"/>
+                        <GradientStop Offset="1" Color="#007C8396"/>
+                    </RadialGradientBrush>
+                </Ellipse.Fill>
+                <Ellipse.RenderTransform><TranslateTransform x:Name="Blob1T"/></Ellipse.RenderTransform>
+            </Ellipse>
+            <Ellipse x:Name="Blob2" Width="320" Height="260" Canvas.Left="140" Canvas.Top="40">
+                <Ellipse.Fill>
+                    <RadialGradientBrush>
+                        <GradientStop Offset="0" Color="#2E7C8396"/>
+                        <GradientStop Offset="1" Color="#007C8396"/>
+                    </RadialGradientBrush>
+                </Ellipse.Fill>
+                <Ellipse.RenderTransform><TranslateTransform x:Name="Blob2T"/></Ellipse.RenderTransform>
+            </Ellipse>
+            <!-- fades the light out before the content area -->
+            <Rectangle Width="400" Height="420">
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Offset="0.35" Color="#000B0D12"/>
+                        <GradientStop Offset="1" Color="#FF0B0D12"/>
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+        </Canvas>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="44"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- ───────── title bar ───────── -->
+            <Grid Grid.Row="0" Margin="16,0,6,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Grid Width="16" Height="16" Margin="0,0,9,0">
+                        <Path Data="{StaticResource ShieldGeo}" Stretch="Uniform" Fill="{DynamicResource Status}"/>
+                        <Path Data="{StaticResource ShieldGeo}" Stretch="Uniform" Margin="-2.5"
+                              Stroke="{DynamicResource Status}" StrokeThickness="1" StrokeDashArray="1.6 1.4" Opacity="0.55"/>
+                    </Grid>
+                    <TextBlock Text="Border Control" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button Style="{StaticResource CaptionButton}" Content="&#xE921;" ToolTip="Minimise"
+                            WindowChrome.IsHitTestVisibleInChrome="True" Click="Minimize_Click"/>
+                    <Button Style="{StaticResource CaptionButton}" Content="&#xE8BB;" ToolTip="Hide to tray"
+                            WindowChrome.IsHitTestVisibleInChrome="True" Click="Close_Click"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- ───────── hero: status ring ───────── -->
+            <StackPanel x:Name="Hero" Grid.Row="1" Margin="0,6,0,18">
+                <StackPanel.RenderTransform><TranslateTransform/></StackPanel.RenderTransform>
+
+                <Grid Width="140" Height="140" HorizontalAlignment="Center">
+                    <!-- inner glow disc -->
+                    <Ellipse Width="104" Height="104">
+                        <Ellipse.Fill>
+                            <RadialGradientBrush x:Name="CoreBrush">
+                                <GradientStop Offset="0" Color="#267C8396"/>
+                                <GradientStop Offset="1" Color="#007C8396"/>
+                            </RadialGradientBrush>
+                        </Ellipse.Fill>
+                    </Ellipse>
+
+                    <!-- track -->
+                    <Ellipse Width="120" Height="120" Stroke="#14FFFFFF" StrokeThickness="2"/>
+
+                    <!-- settled ring with soft glow -->
+                    <Ellipse x:Name="Ring" Width="120" Height="120" StrokeThickness="2"
+                             Stroke="{DynamicResource Status}" Opacity="0.9">
+                        <Ellipse.Effect>
+                            <DropShadowEffect x:Name="RingGlow" ShadowDepth="0" BlurRadius="26" Opacity="0.55"
+                                              Color="#7C8396"/>
+                        </Ellipse.Effect>
+                    </Ellipse>
+
+                    <!-- spinning arc while checking -->
+                    <Ellipse x:Name="Arc" Width="120" Height="120" StrokeThickness="2.5" Opacity="0"
+                             StrokeDashArray="34 200" StrokeDashCap="Round" RenderTransformOrigin="0.5,0.5">
+                        <Ellipse.Stroke>
+                            <SolidColorBrush Color="#ECEEF3"/>
+                        </Ellipse.Stroke>
+                        <Ellipse.RenderTransform><RotateTransform x:Name="ArcSpin"/></Ellipse.RenderTransform>
+                    </Ellipse>
+
+                    <!-- dashed "border" around the shield: the Border Control mark -->
+                    <Path Data="{StaticResource ShieldGeo}" Stretch="Uniform" Width="66" Height="66"
+                          Stroke="{DynamicResource Status}" StrokeThickness="1.4" StrokeDashArray="2.2 2"
+                          StrokeDashCap="Round" Opacity="0.45"/>
+
+                    <!-- shield -->
+                    <Path Data="{StaticResource ShieldGeo}" Stretch="Uniform" Width="50" Height="50"
+                          Stroke="{DynamicResource Status}" StrokeThickness="1.6">
+                        <Path.Fill>
+                            <SolidColorBrush x:Name="ShieldFill" Color="#267C8396"/>
+                        </Path.Fill>
+                    </Path>
+
+                    <!-- status glyph (crossfades with a blur mask) -->
+                    <Path x:Name="Glyph" Width="20" Height="20" Margin="0,0,0,3"
+                          Stroke="{DynamicResource Status}" StrokeThickness="2.4"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                          Data="M5.5,10 L14.5,10" RenderTransformOrigin="0.5,0.5">
+                        <Path.RenderTransform><ScaleTransform x:Name="GlyphScale"/></Path.RenderTransform>
+                        <Path.Effect><BlurEffect x:Name="GlyphBlur" Radius="0"/></Path.Effect>
+                    </Path>
+                </Grid>
+
+                <Grid x:Name="HeadlineHost" Margin="24,10,24,0" RenderTransformOrigin="0.5,0.5">
+                    <Grid.RenderTransform><TranslateTransform x:Name="HeadlineShift"/></Grid.RenderTransform>
+                    <Grid.Effect><BlurEffect x:Name="HeadlineBlur" Radius="0"/></Grid.Effect>
+                    <StackPanel>
+                        <TextBlock x:Name="HeadlineText" Text="Starting…" FontFamily="{StaticResource Display}"
+                                   FontSize="21" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="SubHeadline" Text=" " FontSize="12" Foreground="{StaticResource Muted}"
+                                   HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+
+            <!-- ───────── clocks ───────── -->
+            <Grid x:Name="Clocks" Grid.Row="2" Margin="16,0,16,10">
+                <Grid.RenderTransform><TranslateTransform/></Grid.RenderTransform>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Hairline}"
+                        BorderThickness="1" CornerRadius="14" Padding="14,10,14,11">
+                    <StackPanel>
+                        <TextBlock Text="Your time" FontSize="11" Foreground="{StaticResource Muted}"/>
+                        <TextBlock FontFamily="{StaticResource Display}" Typography.NumeralAlignment="Tabular" Margin="0,1,0,0">
+                            <Run x:Name="RealHm" Text="--:--" FontSize="27" FontWeight="Light"/><Run
+                                 x:Name="RealSec" Text=":--" FontSize="14" Foreground="{StaticResource Faint}"/>
+                        </TextBlock>
+                        <TextBlock x:Name="RealZone" FontSize="11" Foreground="{StaticResource Faint}"
+                                   TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="SysTile" Grid.Column="2" Background="{StaticResource Surface}"
+                        BorderThickness="1" CornerRadius="14" Padding="14,10,14,11">
+                    <Border.BorderBrush>
+                        <SolidColorBrush x:Name="SysTileStroke" Color="#12FFFFFF"/>
+                    </Border.BorderBrush>
+                    <StackPanel>
+                        <TextBlock x:Name="SysLabel" Text="Apps see" FontSize="11" Foreground="{StaticResource Muted}"/>
+                        <TextBlock FontFamily="{StaticResource Display}" Typography.NumeralAlignment="Tabular" Margin="0,1,0,0">
+                            <Run x:Name="SysHm" Text="--:--" FontSize="27" FontWeight="Light"/><Run
+                                 x:Name="SysSec" Text=":--" FontSize="14" Foreground="{StaticResource Faint}"/>
+                        </TextBlock>
+                        <TextBlock x:Name="SysZone" FontSize="11" Foreground="{StaticResource Faint}"
+                                   TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- ───────── checks ───────── -->
+            <Border x:Name="Checks" Grid.Row="3" Margin="16,0,16,0" Background="{StaticResource Surface}"
+                    BorderBrush="{StaticResource Hairline}" BorderThickness="1" CornerRadius="14" ClipToBounds="True">
+                <Border.RenderTransform><TranslateTransform/></Border.RenderTransform>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,2">
+                    <ItemsControl x:Name="StatusList" Margin="0,0,0,-1">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{StaticResource Hairline}" BorderThickness="0,0,0,1"
+                                        Padding="12,9,14,9" Cursor="Hand" MouseLeftButtonUp="Row_Click"
+                                        ToolTip="Click to see the full message">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="#08FFFFFF"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="34"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- pastel status badge: tinted disc + glyph -->
+                                        <Grid x:Name="badge" Width="22" Height="22" VerticalAlignment="Top" HorizontalAlignment="Left"
+                                              Margin="0,1,0,0" RenderTransformOrigin="0.5,0.5">
+                                            <Grid.RenderTransform><ScaleTransform x:Name="badgeScale"/></Grid.RenderTransform>
+                                            <Grid.Effect><BlurEffect x:Name="badgeBlur" Radius="0"/></Grid.Effect>
+
+                                            <Ellipse x:Name="halo" Opacity="0" Fill="#FF9C9C" RenderTransformOrigin="0.5,0.5">
+                                                <Ellipse.RenderTransform><ScaleTransform x:Name="haloScale"/></Ellipse.RenderTransform>
+                                            </Ellipse>
+                                            <Ellipse x:Name="disc" Fill="#1FA9B0C2" Stroke="#40A9B0C2" StrokeThickness="1"/>
+                                            <Path x:Name="mark" Width="12" Height="12" Stretch="None"
+                                                  Stroke="#A9B0C2" StrokeThickness="1.7"
+                                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                                  Data="M3,6 L9,6"/>
+                                        </Grid>
+
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding Title}" FontSize="12.5" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding Detail}" FontSize="11.5" Foreground="{StaticResource Muted}"
+                                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="31"
+                                                       Margin="0,2,0,0" LineHeight="15.5" LineStackingStrategy="BlockLineHeight"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <!-- Colours are plain setters (always applied, even on first render);
+                                     a change of state gets a quick blur-pop so the eye catches it. -->
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Level}" Value="Ok">
+                                        <Setter TargetName="disc" Property="Fill" Value="#268EE6B8"/>
+                                        <Setter TargetName="disc" Property="Stroke" Value="#4D8EE6B8"/>
+                                        <Setter TargetName="mark" Property="Stroke" Value="#8EE6B8"/>
+                                        <Setter TargetName="mark" Property="Data" Value="M2.6,6.3 L5,8.7 L9.6,3.6"/>
+                                        <DataTrigger.EnterActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="badgeScale" Storyboard.TargetProperty="ScaleX" From="0.82" To="1" Duration="0:0:0.28" EasingFunction="{StaticResource EaseOut}"/>
+                                                    <DoubleAnimation Storyboard.TargetName="badgeScale" Storyboard.TargetProperty="ScaleY" From="0.82" To="1" Duration="0:0:0.28" EasingFunction="{StaticResource EaseOut}"/>
+                                                    <DoubleAnimation Storyboard.TargetName="badgeBlur" Storyboard.TargetProperty="Radius" From="4" To="0" Duration="0:0:0.24" EasingFunction="{StaticResource EaseOut}"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </DataTrigger.EnterActions>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Level}" Value="Warn">
+                                        <Setter TargetName="disc" Property="Fill" Value="#26FFD58A"/>
+                                        <Setter TargetName="disc" Property="Stroke" Value="#4DFFD58A"/>
+                                        <Setter TargetName="mark" Property="Stroke" Value="#FFD58A"/>
+                                        <Setter TargetName="mark" Property="Data" Value="M6,2.6 L6,6.6 M6,9.2 L6,9.3"/>
+                                        <DataTrigger.EnterActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="badgeScale" Storyboard.TargetProperty="ScaleX" From="0.82" To="1" Duration="0:0:0.28" EasingFunction="{StaticResource EaseOut}"/>
+                                                    <DoubleAnimation Storyboard.TargetName="badgeScale" Storyboard.TargetProperty="ScaleY" From="0.82" To="1" Duration="0:0:0.28" EasingFunction="{StaticResource EaseOut}"/>
+                                                    <DoubleAnimation Storyboard.TargetName="badgeBlur" Storyboard.TargetProperty="Radius" From="4" To="0" Duration="0:0:0.24" EasingFunction="{StaticResource EaseOut}"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </DataTrigger.EnterActions>
+                                    </DataTrigger>
+                                    <!-- a leak also sends two soft ripples: rare, worth noticing -->
+                                    <DataTrigger Binding="{Binding Level}" Value="Bad">
+                                        <Setter TargetName="disc" Property="Fill" Value="#2BFF9C9C"/>
+                                        <Setter TargetName="disc" Property="Stroke" Value="#59FF9C9C"/>
+                                        <Setter TargetName="mark" Property="Stroke" Value="#FF9C9C"/>
+                                        <Setter TargetName="mark" Property="Data" Value="M3.4,3.4 L8.6,8.6 M8.6,3.4 L3.4,8.6"/>
+                                        <DataTrigger.EnterActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="badgeScale" Storyboard.TargetProperty="ScaleX" From="0.82" To="1" Duration="0:0:0.28" EasingFunction="{StaticResource EaseOut}"/>
+                                                    <DoubleAnimation Storyboard.TargetName="badgeScale" Storyboard.TargetProperty="ScaleY" From="0.82" To="1" Duration="0:0:0.28" EasingFunction="{StaticResource EaseOut}"/>
+                                                    <DoubleAnimation Storyboard.TargetName="badgeBlur" Storyboard.TargetProperty="Radius" From="4" To="0" Duration="0:0:0.24" EasingFunction="{StaticResource EaseOut}"/>
+                                                    <DoubleAnimation Storyboard.TargetName="haloScale" Storyboard.TargetProperty="ScaleX" From="1" To="1.9" Duration="0:0:0.9" RepeatBehavior="2x" EasingFunction="{StaticResource EaseOut}"/>
+                                                    <DoubleAnimation Storyboard.TargetName="haloScale" Storyboard.TargetProperty="ScaleY" From="1" To="1.9" Duration="0:0:0.9" RepeatBehavior="2x" EasingFunction="{StaticResource EaseOut}"/>
+                                                    <DoubleAnimation Storyboard.TargetName="halo" Storyboard.TargetProperty="Opacity" From="0.45" To="0" Duration="0:0:0.9" RepeatBehavior="2x" EasingFunction="{StaticResource EaseOut}"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </DataTrigger.EnterActions>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Border>
+
+            <!-- ───────── controls ───────── -->
+            <StackPanel x:Name="Footer" Grid.Row="4" Margin="16,10,16,16">
+                <StackPanel.RenderTransform><TranslateTransform/></StackPanel.RenderTransform>
+
+                <!-- hide-my-location switches: each change is undone when the VPN disconnects -->
+                <Border Background="{StaticResource Surface}" BorderBrush="{StaticResource Hairline}"
+                        BorderThickness="1" CornerRadius="14" Padding="14,4">
+                    <StackPanel>
+                        <CheckBox x:Name="AutoToggle" Style="{StaticResource Switch}" Click="AutoToggle_Click" Padding="0"
+                                  Margin="0,6" ToolTip="Set the system time zone to the VPN location; your real one comes back on disconnect.">
+                            <TextBlock Text="Match time zone to VPN" FontSize="12.5"/>
+                        </CheckBox>
+                        <Border Height="1" Background="{StaticResource Hairline}"/>
+                        <CheckBox x:Name="LocationToggle" Style="{StaticResource Switch}" Click="LocationToggle_Click"
+                                  Margin="0,6" ToolTip="Turn off Windows location services while the VPN is on; switched back on afterwards.">
+                            <TextBlock Text="Turn off Windows location" FontSize="12.5"/>
+                        </CheckBox>
+                        <Border Height="1" Background="{StaticResource Hairline}"/>
+                        <CheckBox x:Name="KeyboardToggle" Style="{StaticResource Switch}" Click="KeyboardToggle_Click"
+                                  Margin="0,6" ToolTip="Add a keyboard for the VPN country while connected; removed afterwards. Keyboards you already have are never touched.">
+                            <TextBlock Text="Add VPN country keyboard" FontSize="12.5"/>
+                        </CheckBox>
+                    </StackPanel>
+                </Border>
+
+                <UniformGrid Columns="3" Margin="0,8,0,0">
+                    <Button x:Name="RecheckButton" Style="{StaticResource IconButton}" Width="NaN" Height="36"
+                            Margin="0,0,4,0" Click="Recheck_Click" ToolTip="Run every check again">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="RecheckIcon" Text="&#xE72C;" FontSize="12" VerticalAlignment="Center"
+                                       RenderTransformOrigin="0.5,0.5">
+                                <TextBlock.RenderTransform><RotateTransform x:Name="RecheckSpin"/></TextBlock.RenderTransform>
+                            </TextBlock>
+                            <TextBlock Text="Re-check" FontFamily="{StaticResource Text}" FontSize="12" Margin="7,0,0,0"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource IconButton}" Width="NaN" Height="36" Margin="2,0"
+                            Click="Restore_Click" ToolTip="Put your real time zone back now">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE7A7;" FontSize="12" VerticalAlignment="Center"/>
+                            <TextBlock Text="Restore" FontFamily="{StaticResource Text}" FontSize="12" Margin="7,0,0,0"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource IconButton}" Width="NaN" Height="36" Margin="4,0,0,0"
+                            Click="Activity_Click" ToolTip="Show the event log">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE81C;" FontSize="12" VerticalAlignment="Center"/>
+                            <TextBlock Text="Activity" FontFamily="{StaticResource Text}" FontSize="12" Margin="7,0,0,0"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </UniformGrid>
+            </StackPanel>
+        </Grid>
+
+        <!-- ───────── bottom sheet: activity log or one check's full message ───────── -->
+        <Border x:Name="Scrim" Background="#000000" Opacity="0" IsHitTestVisible="False"
+                MouseLeftButtonDown="Scrim_MouseDown"/>
+
+        <Border x:Name="Sheet" VerticalAlignment="Bottom" Height="360" CornerRadius="18,18,0,0"
+                Background="#FA12151C" BorderBrush="{StaticResource Stroke}" BorderThickness="0,1,0,0"
+                Padding="16,10,16,16" Visibility="Collapsed">
+            <Border.RenderTransform><TranslateTransform x:Name="SheetShift" Y="380"/></Border.RenderTransform>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Border Width="36" Height="4" CornerRadius="2" Background="#26FFFFFF"
+                        HorizontalAlignment="Center" VerticalAlignment="Top"/>
+                <Grid Margin="0,12,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock x:Name="SheetTitle" Text="Activity" FontFamily="{StaticResource Display}" FontSize="15"
+                                   FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock x:Name="SheetStatus" FontSize="11.5" Margin="0,1,0,0" Visibility="Collapsed"/>
+                    </StackPanel>
+                    <Button x:Name="CopyButton" Grid.Column="1" Style="{StaticResource IconButton}" Width="NaN" Height="28"
+                            Margin="0,0,6,0" Click="Copy_Click" ToolTip="Copy to clipboard">
+                        <StackPanel Orientation="Horizontal" Margin="10,0">
+                            <TextBlock x:Name="CopyIcon" Text="&#xE8C8;" FontSize="11" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="CopyLabel" Text="Copy" FontFamily="{StaticResource Text}" FontSize="11.5"
+                                       Margin="6,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Grid.Column="2" Style="{StaticResource IconButton}" Content="&#xE8BB;" FontSize="10"
+                            Width="28" Height="28" Click="SheetClose_Click" ToolTip="Close"/>
+                </Grid>
+
+                <!-- activity log -->
+                <ScrollViewer x:Name="LogPanel" Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <Grid>
+                        <TextBlock x:Name="LogEmpty" Text="Nothing yet. Connect or disconnect your VPN to see events here."
+                                   FontSize="12" Foreground="{StaticResource Faint}" TextWrapping="Wrap"/>
+                        <ItemsControl x:Name="LogList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" FontFamily="Cascadia Mono, Consolas" FontSize="11"
+                                               Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,0,0,5"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </ScrollViewer>
+
+                <!-- full message of one check: selectable text -->
+                <ScrollViewer x:Name="DetailPanel" Grid.Row="1" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+                    <TextBox x:Name="DetailText" IsReadOnly="True" TextWrapping="Wrap" Background="Transparent"
+                             BorderThickness="0" Padding="0" Foreground="{StaticResource Ink}" FontSize="12.5"
+                             FontFamily="{StaticResource Text}" SelectionBrush="#8EE6B8" CaretBrush="Transparent"
+                             ContextMenu="{x:Null}"/>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
